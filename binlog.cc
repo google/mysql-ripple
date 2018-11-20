@@ -411,7 +411,7 @@ int Binlog::Recover() {
     return -1;
   }
 
-  absl::MutexLock lock(&position_mutex_);
+  absl::MutexLock position_lock(&position_mutex_);
   position_ = pos;
 
   LOG(INFO) << "Binlog recovery complete\n"
@@ -430,6 +430,7 @@ bool Binlog::IsOpen() const {
 
 // Close an opened binlog.
 bool Binlog::Close() {
+  absl::ReaderMutexLock position_lock(&position_mutex_);
   absl::MutexLock file_lock(&file_mutex_);
   if (binlog_file_ != nullptr)
     CloseFileLocked();
@@ -464,7 +465,7 @@ bool Binlog::GetPosition(const GTIDList &pos, BinlogPosition *dst,
 
 // Get local binlog position, file/pos which is currently being written to.
 BinlogPosition Binlog::GetBinlogPosition() {
-  absl::MutexLock lock(&position_mutex_);
+  absl::ReaderMutexLock position_lock(&position_mutex_);
   return position_;
 }
 
@@ -494,8 +495,8 @@ bool Binlog::GetNextFile(FilePosition *pos) const {
 bool Binlog::WaitBinlogEndPosition(FilePosition *pos,
                                    int64_t *truncate_counter,
                                    absl::Duration timeout) {
-  absl::MutexLock lock(&position_mutex_);
-  auto check = [this, pos]() {
+  absl::ReaderMutexLock position_lock(&position_mutex_);
+  auto check = [this, pos]() SHARED_LOCKS_REQUIRED(position_mutex_) {
     return stop_ || !position_.latest_completed_gtid_position.equal(*pos);
   };
   position_mutex_.AwaitWithTimeout(absl::Condition(&check), timeout);
@@ -518,7 +519,7 @@ bool Binlog::WaitBinlogEndPosition(FilePosition *pos,
 }
 
 void Binlog::Stop() {
-  absl::MutexLock lock(&position_mutex_);
+  absl::MutexLock position_lock(&position_mutex_);
   stop_ = true;
 }
 
@@ -952,7 +953,7 @@ bool Binlog::PurgeLogsUntil(absl::string_view to_file,
     }
 
     {
-      absl::MutexLock lock(&position_mutex_);
+      absl::MutexLock position_lock(&position_mutex_);
       position_.gtid_purged = index_.GetOldestEntry().start_position;
     }
 

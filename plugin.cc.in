@@ -14,7 +14,7 @@
 
 #include "plugin.h"
 
-#include <stdlib.h>
+#include <cstdlib>
 
 namespace mysql_ripple {
 

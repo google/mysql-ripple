@@ -224,7 +224,7 @@ TEST(Binlog_index, Recover) {
 
     // Add one file
     GTIDList start_pos;
-    if (exp.start_pos.size()) {
+    if (!exp.start_pos.empty()) {
       EXPECT_TRUE(start_pos.Parse(exp.start_pos));
     }
     EXPECT_TRUE(index.NewEntry(start_pos, FilePosition("master-bin", 0)));
@@ -399,7 +399,7 @@ bool Create(BinlogIndex *index,
 
   for (const auto& entry : entries) {
     GTIDList start_pos;
-    if (entry.first.size()) {
+    if (!entry.first.empty()) {
       if (!start_pos.Parse(entry.first)) return false;
     }
     if (!index->NewEntry(start_pos, FilePosition("master-bin", 0)))

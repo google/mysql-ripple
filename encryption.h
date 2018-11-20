@@ -17,10 +17,9 @@
 #ifndef MYSQL_RIPPLE_ENCRYPTION_H
 #define MYSQL_RIPPLE_ENCRYPTION_H
 
-#include <stdlib.h>
-#include <stdio.h>
-
 #include <cstdint>
+#include <cstdio>
+#include <cstdlib>
 #include <memory>
 
 #include "absl/strings/string_view.h"

@@ -17,8 +17,8 @@
 #ifndef MYSQL_RIPPLE_FILE_BASE_H
 #define MYSQL_RIPPLE_FILE_BASE_H
 
-#include <stdlib.h>
 #include <cstdint>
+#include <cstdlib>
 
 #include "absl/strings/string_view.h"
 #include "absl/time/time.h"

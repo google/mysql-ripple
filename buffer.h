@@ -17,9 +17,8 @@
 #ifndef MYSQL_RIPPLE_BUFFER_H
 #define MYSQL_RIPPLE_BUFFER_H
 
-#include <stdlib.h>
-
 #include <cstdint>
+#include <cstdlib>
 #include <vector>
 
 #include "absl/strings/string_view.h"

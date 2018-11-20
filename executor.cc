@@ -14,7 +14,7 @@
 
 #include "executor.h"
 
-#include <stdlib.h>
+#include <cstdlib>
 
 #include "absl/time/time.h"
 

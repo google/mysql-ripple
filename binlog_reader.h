@@ -17,7 +17,7 @@
 #ifndef MYSQL_RIPPLE_BINLOG_READER_H
 #define MYSQL_RIPPLE_BINLOG_READER_H
 
-#include <stdio.h>
+#include <cstdio>
 #include <vector>
 
 #include "absl/strings/string_view.h"

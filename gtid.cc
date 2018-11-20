@@ -314,7 +314,7 @@ std::string GTIDSet::ToString() const {
   // guess that each interval takes 15 characters
   dst.reserve(gtid_intervals_.size() * (Uuid::TEXT_LENGTH + 1 + 15));
   for (const GTIDInterval& set : gtid_intervals_) {
-    if (dst.size() > 0)
+    if (!dst.empty())
       dst += ',';
     size_t len = dst.length();
     dst.resize(len + Uuid::TEXT_LENGTH + 1);

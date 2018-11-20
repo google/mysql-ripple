@@ -14,9 +14,10 @@
 
 #include "encryption.h"
 
-#include <stdlib.h>
-#include <string.h>
 #include <arpa/inet.h>  // htonl
+
+#include <cstdlib>
+#include <cstring>
 
 #include "absl/strings/string_view.h"
 #include "my_crypt.h"

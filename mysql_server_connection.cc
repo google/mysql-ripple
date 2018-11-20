@@ -15,7 +15,7 @@
 #include "mysql_server_connection.h"
 
 #include <netinet/in.h>
-#include <stdio.h>
+#include <cstdio>
 #include <utility>
 
 #include "monitoring.h"

@@ -17,8 +17,7 @@
 #ifndef MYSQL_RIPPLE_BINLOG_INDEX_H
 #define MYSQL_RIPPLE_BINLOG_INDEX_H
 
-#include <stdio.h>
-
+#include <cstdio>
 #include <string>
 #include <vector>
 

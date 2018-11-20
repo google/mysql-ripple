@@ -13,9 +13,9 @@
 // limitations under the License.
 
 #include <unistd.h>
-#include <signal.h>
 
 #include <atomic>
+#include <csignal>
 
 #include "absl/time/time.h"
 #include "file.h"
@@ -146,31 +146,31 @@ bool Rippled::Setup() {
 
 void Rippled::Teardown() {
   // First stop all objects.
-  if (pool_.get() != nullptr)
+  if (pool_ != nullptr)
     pool_->Stop();
-  if (binlog_.get() != nullptr)
+  if (binlog_ != nullptr)
     binlog_->Stop();
-  if (master_session_.get() != nullptr)
+  if (master_session_ != nullptr)
     master_session_->Stop();
-  if (listener_.get() != nullptr)
+  if (listener_ != nullptr)
     listener_->Stop();
-  if (purge_thread_.get() != nullptr)
+  if (purge_thread_ != nullptr)
     purge_thread_->Stop();
   // Manager session does not need to be stopped because its run method will
   // return when the RPC server it borrows from the listener dies.
 
   // Then wait for them to stop.
-  if (master_session_.get() != nullptr)
+  if (master_session_ != nullptr)
     master_session_->WaitState(Session::STOPPED, absl::Seconds(3));
   LOG(INFO) << "Stopped master session!";
-  if (listener_.get() != nullptr)
+  if (listener_ != nullptr)
     listener_->WaitState(Session::STOPPED, absl::Seconds(3));
   LOG(INFO) << "Stopped listener!";
 
-  if (purge_thread_.get() != nullptr)
+  if (purge_thread_ != nullptr)
     purge_thread_->WaitState(Session::STOPPED, absl::Seconds(3));
 
-  if (manager_session_.get() != nullptr) {
+  if (manager_session_ != nullptr) {
     LOG(INFO) << "Manager session still exists...";
     manager_session_->WaitState(Session::STOPPED, absl::Seconds(3));
     manager_session_->Shutdown(port_);
@@ -178,7 +178,7 @@ void Rippled::Teardown() {
 
   // Make sure all SlaveSessions have ended before destroying the
   // SlaveSessionFactory, since they are registered there.
-  if (pool_.get() != nullptr)
+  if (pool_ != nullptr)
     pool_->WaitStopped();
 
   if (port_ != nullptr)
@@ -195,7 +195,7 @@ void Rippled::Teardown() {
 }
 
 bool Rippled::Start() {
-  if (manager_session_.get() != nullptr) {
+  if (manager_session_ != nullptr) {
     manager_session_->Start();
     manager_session_->WaitStarted();
   }

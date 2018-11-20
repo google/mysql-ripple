@@ -14,7 +14,7 @@
 
 #include "mysql_init.h"
 
-#include <stdlib.h>  // nullptr
+#include <cstdlib>  // nullptr
 
 #include "mysql.h"
 

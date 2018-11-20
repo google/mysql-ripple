@@ -14,7 +14,7 @@
 
 #include "mysql_client_connection.h"
 
-#include <stdio.h>
+#include <cstdio>
 
 #include "absl/strings/numbers.h"
 #include "byte_order.h"
@@ -195,7 +195,7 @@ bool ClientConnection::FetchServerId() {
 
   std::unique_ptr<MYSQL_RES, mysql_util::MYSQL_RES_deleter> result(
       mysql_store_result(mysql_.get()));
-  if (result.get() == nullptr)
+  if (result == nullptr)
     return false;
 
   MYSQL_ROW row = mysql_fetch_row(result.get());
@@ -219,7 +219,7 @@ bool ClientConnection::FetchVariable(const std::string& variable,
 
   std::unique_ptr<MYSQL_RES, mysql_util::MYSQL_RES_deleter> result(
       mysql_store_result(mysql_.get()));
-  if (result.get() == nullptr)
+  if (result == nullptr)
     return false;
 
   MYSQL_ROW row = mysql_fetch_row(result.get());
@@ -381,7 +381,7 @@ bool ClientConnection::CheckSupportsSemiSync(bool *supported,
 
   std::unique_ptr<MYSQL_RES, mysql_util::MYSQL_RES_deleter> result(
       mysql_store_result(mysql_.get()));
-  if (result.get() == nullptr) {
+  if (result == nullptr) {
     return true;
   }
 
@@ -487,12 +487,12 @@ bool ClientConnection::StartReplicationStreamMariaDB(
 // Write a packet.
 // This method is blocking.
 bool ClientConnection::WritePacket(Packet packet) {
-  if (my_net_write(&mysql_.get()->net, packet.ptr, packet.length)) {
+  if (my_net_write(&mysql_->net, packet.ptr, packet.length)) {
     SetError("Failed to write packet");
     return false;
   }
 
-  if (net_flush(&mysql_.get()->net)) {
+  if (net_flush(&mysql_->net)) {
     SetError("Failed net_flush after my_net_write");
     return false;
   }
@@ -502,13 +502,13 @@ bool ClientConnection::WritePacket(Packet packet) {
 }
 
 void ClientConnection::Reset() {
-  mysql_.get()->net.pkt_nr = 0;
+  mysql_->net.pkt_nr = 0;
 }
 
 unsigned ClientConnection::ParseProtocolString(const char *str) {
-  if (strcasecmp(str, "tcp") == 0) {
+  if (strcasecmp(str, "tcp") == 0)
     return MYSQL_PROTOCOL_TCP;
-  }
+
   return MYSQL_PROTOCOL_DEFAULT;
 }
 

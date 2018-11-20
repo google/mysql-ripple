@@ -14,8 +14,9 @@
 
 #include "mysql_protocol.h"
 
-#include <string.h>
 #include <zlib.h>
+
+#include <cstring>
 
 // MySQL client library includes
 #include "mysql.h"
