@@ -1,0 +1,74 @@
+# Copyright 2018 The Ripple Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+cc_library(
+    name = "mysqlclient",
+    includes = [
+        "mysql",
+    ],
+    hdrs = [
+        "mysql/byte_order_generic_x86_64.h",
+        "mysql/little_endian.h",
+        "mysql/m_ctype.h",
+        "mysql/m_string.h",
+        "mysql/my_alloc.h",
+        "mysql/my_attribute.h",
+        "mysql/my_byteorder.h",
+        "mysql/my_config.h",
+        "mysql/my_compiler.h",
+        "mysql/my_dbug.h",
+        "mysql/my_dir.h",
+        "mysql/my_global.h",
+        "mysql/my_list.h",
+        "mysql/my_net.h",
+        "mysql/my_pthread.h",
+        "mysql/my_sys.h",
+        "mysql/my_valgrind.h",
+        "mysql/mysql.h",
+        "mysql/mysql_com.h",
+        "mysql/mysql_time.h",
+        "mysql/mysql_version.h",
+        "mysql/mysqld_error.h",
+        "mysql/private/violite.h",
+        "mysql/typelib.h",
+    ],
+    linkopts = [
+        "-l:libmariadbclient.a",
+        "-ldl",
+        "-lpthread",
+        "-lz",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+cc_library(
+    name = "zlib",
+    hdrs = [
+        "zlib.h",
+    ],
+    linkopts = ["-lz"],
+    visibility = ["//visibility:public"],
+)
+
+cc_library(
+    name = "openssl",
+    hdrs = [
+        "openssl/aes.h",
+        "openssl/err.h",
+        "openssl/evp.h",
+        "openssl/rand.h",
+    ],
+    linkopts = ["-lcrypto"],
+    visibility = ["//visibility:public"],
+)
