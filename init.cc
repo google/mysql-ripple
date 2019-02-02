@@ -13,10 +13,12 @@
 // limitations under the License.
 
 #include "init.h"
+#include "flags.h"
 
 namespace mysql_ripple {
 
 void Init(int argc, char** argv) {
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
 }
 
 }  // namespace mysql_ripple
