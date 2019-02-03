@@ -159,6 +159,7 @@ static int fun_UNIX_TIMESTAMP(resultset::QueryContext *context) {
 }
 
 // Function for server id
+// returns the value in column 1
 static int fun_SERVER_ID(resultset::QueryContext *context) {
   if (context->row_no > 0)
     return 0;
@@ -167,13 +168,35 @@ static int fun_SERVER_ID(resultset::QueryContext *context) {
   return 1;
 }
 
+// Function for server id
+// returns the value in column 0
+static int fun_GLOBAL_SERVER_ID(resultset::QueryContext *context) {
+  if (context->row_no > 0)
+    return 0;
+  context->storage.push_back(std::to_string(FLAGS_ripple_server_id));
+  context->resultset->rows[0][0].data = context->storage.at(0).c_str();
+  return 1;
+}
+
 // Function for server uuid
+// returns the value in column 1
 static int fun_SERVER_UUID(resultset::QueryContext *context) {
   if (context->row_no > 0)
     return 0;
   context->storage.push_back(
       context->slave_session->GetRippledUuid().ToString());
   context->resultset->rows[0][1].data = context->storage.at(0).c_str();
+  return 1;
+}
+
+// Function for server uuid
+// returns the value in column 0
+static int fun_GLOBAL_SERVER_UUID(resultset::QueryContext *context) {
+  if (context->row_no > 0)
+    return 0;
+  context->storage.push_back(
+      context->slave_session->GetRippledUuid().ToString());
+  context->resultset->rows[0][0].data = context->storage.at(0).c_str();
   return 1;
 }
 
@@ -368,6 +391,14 @@ static HardcodedQuery hardcoded_queries[] = {
         255}},
       resultset::NullRowFunction,
       {{{"CRC32"}}}}},
+    {"SELECT @@GLOBAL.SERVER_ID",
+     {{{nullptr, nullptr, "@@GLOBAL.SERVER_ID", constants::TYPE_VARCHAR, 255}},
+      fun_GLOBAL_SERVER_ID,
+      {{{nullptr}}}}},
+    {"SELECT @@GLOBAL.SERVER_UUID",
+     {{{nullptr, nullptr, "@@GLOBAL.SERVER_UUID", constants::TYPE_VARCHAR, 255}},
+      fun_GLOBAL_SERVER_UUID,
+      {{{nullptr}}}}},
     {"SELECT @@GLOBAL.gtid_domain_id",
      {{{nullptr, nullptr, "@@GLOBAL.gtid_domain_id", constants::TYPE_VARCHAR,
         255}},
