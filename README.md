@@ -40,5 +40,5 @@ bazel test
 ```
 If all went OK, your binary is at
 ```
-find $HOME -type f -name rippled
+./bazel-bin/rippled
 ```
