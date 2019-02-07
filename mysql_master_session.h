@@ -80,6 +80,7 @@ class MasterSession : public ThreadedSession {
   void SetPort(int port) { port_ = port; }
   void SetProtocol(const std::string& protocol) { protocol_ = protocol; }
   void SetUser(const std::string& user) { user_ = user; }
+  void SetPassword(const std::string& password) { password_ = password; }
   void SetCompressedProtocol(bool onoff) { compressed_protocol_ = onoff; }
   void SetHeartbeatPeriod(double period) { heartbeat_period_ = period; }
 
@@ -87,6 +88,7 @@ class MasterSession : public ThreadedSession {
   int GetPort() const { return port_; }
   std::string GetProtocol() const { return protocol_; }
   std::string GetUser() const { return user_; }
+  std::string GetPassword() const { return password_; }
   bool GetCompressedProtocol() const { return compressed_protocol_; }
   double GetHeartbeatPeriod() const { return heartbeat_period_; }
 
@@ -103,6 +105,7 @@ class MasterSession : public ThreadedSession {
   int port_;
   std::string protocol_;
   std::string user_;
+  std::string password_;
   bool compressed_protocol_;
   double heartbeat_period_;
 

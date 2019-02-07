@@ -80,7 +80,8 @@ ClientConnection::Connect(const char *name,
                           const char *host,
                           int port,
                           const char *protocol,
-                          const char *user) {
+                          const char *user,
+                          const char *password) {
   ClearError();
 
   {
@@ -109,7 +110,6 @@ ClientConnection::Connect(const char *name,
   user_ = user;
   protocol_ = protocol;
 
-  const char *passwd = nullptr;
   const char *db = nullptr;
   const char *socket = nullptr;
   int flags = 0;
@@ -122,7 +122,7 @@ ClientConnection::Connect(const char *name,
   mysql_options(mysql_.get(), MYSQL_OPT_PROTOCOL, (char*) &opt_protocol);
 
   MYSQL *res = mysql_real_connect(
-      mysql_.get(), host, user, passwd, db, port, socket, flags);
+      mysql_.get(), host, user, password, db, port, socket, flags);
 
   if (res == nullptr) {
     SetError(std::string("Failed to connect: ").
