@@ -121,6 +121,8 @@ void Manager::FillMasterStatus(ripple_proto::MasterStatus *master_status) {
         ->set_value(connection.GetHost());
     master_status->mutable_master_info()->mutable_user()
         ->set_value(connection.GetUser());
+    master_status->mutable_master_info()->mutable_password()
+        ->set_value(connection.GetPassword());
     master_status->mutable_master_info()->mutable_port()
         ->set_value(connection.GetPort());
     master_status->mutable_master_info()->mutable_protocol()
@@ -131,6 +133,8 @@ void Manager::FillMasterStatus(ripple_proto::MasterStatus *master_status) {
         ->set_value(session.GetHost());
     master_status->mutable_master_info()->mutable_user()
         ->set_value(session.GetUser());
+    master_status->mutable_master_info()->mutable_password()
+        ->set_value(session.GetPassword());
     master_status->mutable_master_info()->mutable_port()
         ->set_value(session.GetPort());
     master_status->mutable_master_info()->mutable_protocol()
@@ -246,6 +250,9 @@ void Manager::ChangeMaster(const ripple_proto::MasterInfo *master_info,
   }
   if (master_info->has_user()) {
     session.SetUser(master_info->user().value());
+  }
+  if (master_info->has_password()) {
+    session.SetPassword(master_info->password().value());
   }
   if (master_info->has_port()) {
     session.SetPort(master_info->port().value());

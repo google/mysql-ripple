@@ -110,6 +110,7 @@ message MasterInfo {
     google.protobuf.BoolValue semi_sync_slave_reply_enabled = 5;
     google.protobuf.BoolValue compressed_protocol = 6;
     google.protobuf.DoubleValue heartbeat_period = 7;
+    google.protobuf.StringValue password = 8;
 }
 
 message MasterStatus {

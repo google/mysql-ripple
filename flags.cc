@@ -44,6 +44,9 @@ DEFINE_string(ripple_server_name, "",
 DEFINE_string(ripple_master_user, "root",
               "Connect to master using this user");
 
+DEFINE_string(ripple_master_password, "",
+              "Connect to master using this password");
+
 DEFINE_string(ripple_master_protocol, "",
               "Connect to master using this protcol "
               "(if none set using mysql default)");

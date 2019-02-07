@@ -39,6 +39,7 @@ MasterSession::MasterSession(Binlog *binlog,
       port_(FLAGS_ripple_master_port),
       protocol_(FLAGS_ripple_master_protocol),
       user_(FLAGS_ripple_master_user),
+      password_(FLAGS_ripple_master_password),
       compressed_protocol_(FLAGS_ripple_master_compressed_protocol),
       heartbeat_period_(FLAGS_ripple_master_heartbeat_period),
       connection_attempt_counter_(0),
@@ -115,7 +116,8 @@ bool MasterSession::Connect() {
                           host_.c_str(),
                           port_,
                           protocol_.c_str(),
-                          user_.c_str()) &&
+                          user_.c_str(),
+                          password_.c_str()) &&
       connection_.FetchServerVersion() &&
       connection_.FetchServerId()) {
     connection_.FetchVariable("server_name", &server_name_);
@@ -162,7 +164,8 @@ bool MasterSession::Connect() {
   LOG(WARNING)
       << "Failed to connected to"
       << " host: " << host_
-      << ", port: " << port_;
+      << ", port: " << port_
+      << ", err: " << connection_.GetLastErrorMessage();
   connection_.Disconnect();
   return false;
 }

@@ -29,6 +29,7 @@ DECLARE_string(ripple_server_type);
 
 DECLARE_int32(ripple_master_port);
 DECLARE_string(ripple_master_user);
+DECLARE_string(ripple_master_password);
 DECLARE_string(ripple_master_protocol);
 DECLARE_string(ripple_master_address);
 DECLARE_bool(ripple_master_compressed_protocol);

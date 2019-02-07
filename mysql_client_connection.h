@@ -59,7 +59,8 @@ class ClientConnection : public Connection {
                        const char *host,
                        int port,
                        const char *protocol,
-                       const char *user);
+                       const char *user,
+                       const char *password);
 
   // Read a packet.
   // The returned packet is valid until next call.
@@ -137,6 +138,7 @@ class ClientConnection : public Connection {
   // These methods are for monitoring
   std::string GetHost() const override { return host_; }
   std::string GetUser() const { return user_; }
+  std::string GetPassword() const { return password_; }
   uint16_t GetPort() const override { return port_; }
   std::string GetProtocol() const { return protocol_; }
 
@@ -156,6 +158,7 @@ class ClientConnection : public Connection {
   uint16_t port_;
   std::string protocol_;
   std::string user_;
+  std::string password_;
 
   bool FetchMysqlVariant();
   bool ExecuteSetHeartbeatPeriod(double seconds);
