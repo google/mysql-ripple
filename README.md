@@ -35,7 +35,7 @@ git clone https://github.com/google/mysql-ripple.git
 ```
 cd mysql-ripple
 bazel build :all
-bazel test
+bazel test :all
 
 ```
 If all went OK, your binary is at
