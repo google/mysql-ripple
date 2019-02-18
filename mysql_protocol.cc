@@ -197,13 +197,50 @@ bool Protocol::Authenticate() {
   const char *authdata = user + user_len + 1;
   int authdata_len = Unpack(&authdata);  // length encoded
 
+  const char *clientplugin = reinterpret_cast<const char*>(authdata + authdata_len);
+  LOG(WARNING) << "Client Authentication Plugin: " << clientplugin;
+
   // TODO(crystall): Add monitoring for authentication failures
   LOG(WARNING) << "Authenticating user: " <<  user;
 
   const char *slave_pwhash = FLAGS_ripple_server_password_hash.c_str();
 
-  if (strlen(slave_pwhash) > 0) {
-    // Authentication with mysql_native_password
+  if (strncmp(clientplugin, plugin, sizeof(plugin)) != 0) {
+    SendAuthSwitchRequest(plugin, scramble, SCRAMBLE_LENGTH);
+    p = connection_->ReadPacket();
+    if (p.length < SCRAMBLE_LENGTH) {
+      LOG(WARNING) << "Failed to read AuthSwitchResponse packet";
+      return false;
+    }
+
+    const char *authswdata = reinterpret_cast<const char*>(p.ptr);
+    int authswdata_len = strlen(authswdata);
+
+    if (!ValidateNativeHash(authswdata, authswdata_len,
+                            slave_pwhash, scramble)) {
+      SendERR(1045, "28000", "Access denied");
+    }
+  } else if (strlen(slave_pwhash) > 0) {
+    if (!ValidateNativeHash(authdata, authdata_len, slave_pwhash, scramble)) {
+      SendERR(1045, "28000", "Access denied");
+    }
+  } else {
+    LOG(WARNING) << "No ripple_server_password_hash set, using noop authentication";
+  }
+
+  if (SendOK()) {
+    connection_->Reset();
+    connection_->SetCompressed(compress);
+    return true;
+  }
+
+  return false;
+}
+
+// Authentication with mysql_native_password
+bool Protocol::ValidateNativeHash(const char *authdata, int authdata_len,
+                                  const char *slave_pwhash,
+                                  unsigned char *scramble) {
 
     if (authdata_len < SHA_DIGEST_LENGTH) {
       LOG(WARNING) << "Received authdata with length " << authdata_len
@@ -240,21 +277,43 @@ bool Protocol::Authenticate() {
                 (const char*) bn_slave_pwhash_buf,
                 SHA_DIGEST_LENGTH)) {
       free(bn_slave_pwhash_buf);
-      SendERR(1045, "28000", "Access denied");
       return false;
     }
     free(bn_slave_pwhash_buf);
-  } else {
-    LOG(WARNING) << "No ripple_server_password_hash set, using noop authentication";
-  }
 
-  if (SendOK()) {
-    connection_->Reset();
-    connection_->SetCompressed(compress);
     return true;
+}
+
+// docs: https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_connection_phase_packets_protocol_auth_switch_request.html
+bool Protocol::SendAuthSwitchRequest(const char *plugin, unsigned char *data,
+                                     size_t data_len) {
+  uint8_t packet[1 + strlen(plugin) + 1 + data_len + 1];
+  uint8_t *ptr = packet;
+
+  LOG(INFO) << "Sending AuthSwitchRequest for " << plugin;
+
+  *ptr = constants::EOF_PACKET;
+  ptr += 1;
+
+  memcpy(ptr, plugin, strlen(plugin) + 1);
+  ptr += strlen(plugin) + 1;
+
+  memcpy(ptr, data, data_len);
+  ptr += data_len;
+
+  // Terminate data with a NUL. This is not in the docs, but seems to be
+  // required.
+  *ptr = 0;
+  ptr += 1;
+
+  Connection::Packet p = { static_cast<int>(ptr - packet), packet };
+  assert(p.length <= sizeof(packet));
+  if (!connection_->WritePacket(p)) {
+    LOG(WARNING) << "Failed to write AuthSwitchRequest packet";
+    return false;
   }
 
-  return false;
+  return true;
 }
 
 bool Protocol::SendOK() {
