@@ -41,6 +41,10 @@ DEFINE_string(ripple_server_name, "",
               "Server name that ripple sets when connecting to master "
               "and exposes in the server_name variable");
 
+DEFINE_string(ripple_server_password_hash, "",
+              "Password hash in mysql_native_password format to authenticate "
+              "client connections. Without leading *");
+
 DEFINE_string(ripple_master_user, "root",
               "Connect to master using this user");
 

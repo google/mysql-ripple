@@ -26,6 +26,7 @@ DECLARE_string(ripple_rw_rpc_users);
 DECLARE_string(ripple_server_ports);
 DECLARE_string(ripple_server_address);
 DECLARE_string(ripple_server_type);
+DECLARE_string(ripple_server_password_hash);
 
 DECLARE_int32(ripple_master_port);
 DECLARE_string(ripple_master_user);
