@@ -20,6 +20,7 @@
 #include "plugin.h"
 
 namespace mysql_ripple {
+
 const char *kPortType = "tcp";
 
 class Acceptor : public RunnableInterface {

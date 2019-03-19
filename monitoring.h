@@ -24,6 +24,7 @@
 
 namespace monitoring {
   void Initialize();
+
   // TODO(pivanof): Add some meaningful implementations for these classes.
 
   template <typename... Fields>

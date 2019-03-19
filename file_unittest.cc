@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "file.h"
+
 #include "gtest/gtest.h"
 
 namespace mysql_ripple {

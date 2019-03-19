@@ -19,7 +19,6 @@
 
 // Aggregation of all file factories.
 #include "file_FILE.h"
-
 #define DEFAULT_FILE_FACTORY() file::FILE_Factory()
 
 #endif  // MYSQL_RIPPLE_FILE_H

@@ -161,6 +161,7 @@ bool MasterSession::Connect() {
     }
     return true;
   }
+
   LOG(WARNING)
       << "Failed to connected to"
       << " host: " << host_
