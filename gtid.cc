@@ -113,9 +113,9 @@ bool GTIDStartPosition::ParseMariaDBConnectState(absl::string_view s) {
   if (s.empty()) {
     return true;
   }
-  for (auto s : absl::StrSplit(s, ',')) {
+  for (auto gtid_str : absl::StrSplit(s, ',')) {
     GTID gtid;
-    if (!gtid.Parse(s)) {
+    if (!gtid.Parse(gtid_str)) {
       return false;
     }
     if (!gtid.server_id.uuid.empty()) {
@@ -153,9 +153,9 @@ void GTIDStartPosition::SerializeToString(std::string *dst) const {
 // [ UUID : ]? domain-serverid-sequenceno
 bool GTIDStartPosition::Parse(absl::string_view s) {
   Reset();
-  for (auto s : absl::StrSplit(stripQuotes(s), ',')) {
+  for (auto gtid_str : absl::StrSplit(stripQuotes(s), ',')) {
     GTID gtid;
-    if (!gtid.Parse(s)) {
+    if (!gtid.Parse(gtid_str)) {
       return false;
     }
     if (!Update(gtid)) {
@@ -336,9 +336,9 @@ std::string GTIDSet::ToString() const {
 
 bool GTIDSet::Parse(absl::string_view s) {
   Clear();
-  for (auto s : absl::StrSplit(s, ',')) {
+  for (auto interval_str : absl::StrSplit(s, ',')) {
     GTIDInterval interval;
-    if (!interval.Parse(s)) {
+    if (!interval.Parse(interval_str)) {
       return false;
     }
     gtid_intervals_.push_back(interval);
@@ -354,9 +354,9 @@ bool GTIDSet::GTIDInterval::Parse(absl::string_view s) {
     return false;
   }
   s = s.substr(Uuid::TEXT_LENGTH + 1);
-  for (auto s : absl::StrSplit(s, ':')) {
+  for (auto interval_str : absl::StrSplit(s, ':')) {
     Interval interval;
-    if (!interval.Parse(s)) {
+    if (!interval.Parse(interval_str)) {
       return false;
     }
     intervals.push_back(interval);
@@ -690,9 +690,9 @@ bool GTIDList::GTIDStream::Parse(absl::string_view s) {
   if (!s.empty() && s.front() == '[' && s.back() == ']') {
     s.remove_prefix(1);
     s.remove_suffix(1);
-    for (auto s : absl::StrSplit(s, "][")) {
+    for (auto interval_str : absl::StrSplit(s, "][")) {
       GTIDSet::Interval interval;
-      if (!interval.Parse(s)) {
+      if (!interval.Parse(interval_str)) {
         return false;
       }
       intervals.push_back(interval);
