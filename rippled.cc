@@ -95,7 +95,22 @@ bool Rippled::Setup() {
                            FLAGS_ripple_max_binlog_size, GetFileFactory()));
   GTIDList start_pos;
   if (!FLAGS_ripple_requested_start_gtid_position.empty()) {
-    CHECK(start_pos.Parse(FLAGS_ripple_requested_start_gtid_position));
+    // Requested start position can be presented in two formats. Either
+    // MariaDB's GTID (e.g. "1-12345678-123"), or MySQL's GTID set format
+    // (e.g. "6c27ed6d-7ee1-11e3-be39-6c626d957cfa:1-5:10-15").
+    GTIDStartPosition mariadb_pos;
+    GTIDSet mysql_gtid_set;
+    if (mariadb_pos.ParseMariaDBConnectState(
+            FLAGS_ripple_requested_start_gtid_position)) {
+      start_pos.Assign(mariadb_pos);
+    } else if (mysql_gtid_set.Parse(
+                   FLAGS_ripple_requested_start_gtid_position)) {
+      start_pos.Assign(mysql_gtid_set);
+    } else {
+      LOG(FATAL) << "Cannot parse value for flag "
+                    "-ripple_requested_start_gtid_position: "
+                 << FLAGS_ripple_requested_start_gtid_position;
+    }
   }
   switch (binlog_->Recover()) {
     case 0:

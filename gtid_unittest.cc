@@ -123,6 +123,13 @@ TEST(GTIDStartPosition, Parse) {
   EXPECT_FALSE(pos.ParseMariaDBConnectState("1-2-3,1-2-3"));
   EXPECT_TRUE(pos.ParseMariaDBConnectState("1-2-2,1-2-3"));
   EXPECT_FALSE(pos.ParseMariaDBConnectState("1-2-3,1-2-2"));
+
+  // MySQL's GTID set format shouldn't be parsed successfully.
+  str = "6c27ed6d-7ee1-11e3-be39-6c626d957cfa:1-5";
+  EXPECT_FALSE(pos.ParseMariaDBConnectState(str));
+  str = "6c27ed6d-7ee1-11e3-be39-6c626d957cfa:1-5,"
+        "6c27ed6d-7ee1-11e3-be39-6c626d957cfb:10-15:20-25";
+  EXPECT_FALSE(pos.ParseMariaDBConnectState(str));
 }
 
 TEST(GTIDSet, uuid) {
@@ -205,6 +212,12 @@ TEST(GTIDSet, Basic) {
   str = "6c27ed6d-7ee1-11e3-be39-6c626d957cfc:23-23";
   EXPECT_TRUE(set.Parse(str));
   EXPECT_EQ(set.ToString(), "6c27ed6d-7ee1-11e3-be39-6c626d957cfc:23");
+
+  // MariaDB's GTID format shouldn't be parsed successfully
+  str = "1-2-3";
+  EXPECT_FALSE(set.Parse(str));
+  str = "1-2-3,2-12345678-123";
+  EXPECT_FALSE(set.Parse(str));
 }
 
 TEST(GTIDList, Parse) {
