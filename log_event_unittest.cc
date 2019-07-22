@@ -47,9 +47,8 @@ class TestEventFactory {
   }
 
   void Create(RotateEvent *dst) {
-    RotateEvent rotate;
-    rotate.offset = time(0);
-    rotate.filename = "thisisafilename.bin";
+    dst->offset = time(0);
+    dst->filename = "thisisafilename.bin";
   }
 
   void Create(FormatDescriptorEvent *dst) {
@@ -57,6 +56,7 @@ class TestEventFactory {
     dst->server_version = "4.3.2-test-version";
     dst->create_timestamp = 12;
     dst->checksum = (time(0) & 1) ? true : false;
+    dst->event_header_length = constants::LOG_EVENT_HEADER_LENGTH;
   }
 
   void Create(QueryEvent *dst) {
