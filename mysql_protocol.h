@@ -48,6 +48,11 @@ class Protocol {
   virtual bool GetEventChecksums() const { return event_checksums_; }
 
   virtual bool Authenticate();
+  virtual bool ValidateNativeHash(const char *authdata, int authdata_len,
+                                  const char *slave_pwhash,
+                                  unsigned char *scramble);
+  virtual bool SendAuthSwitchRequest(const char *plugin, unsigned char *data,
+                                     size_t data_len);
   virtual bool SendOK();
   virtual bool SendEOF();
   virtual bool SendERR(int code, const char* sqlstate, const char* msg);

@@ -19,6 +19,7 @@
 #include <openssl/bn.h>
 #include <zlib.h>
 
+#include <cstdint>
 #include <cstring>
 
 // MySQL client library includes
@@ -197,64 +198,131 @@ bool Protocol::Authenticate() {
   const char *authdata = user + user_len + 1;
   int authdata_len = Unpack(&authdata);  // length encoded
 
+  const char *clientplugin = authdata + authdata_len;
+  LOG(INFO) << "Client Authentication Plugin: " << clientplugin;
+
   // TODO(crystall): Add monitoring for authentication failures
-  LOG(WARNING) << "Authenticating user: " <<  user;
+  LOG(INFO) << "Authenticating user: " <<  user;
 
   const char *slave_pwhash = FLAGS_ripple_server_password_hash.c_str();
 
-  if (strlen(slave_pwhash) > 0) {
-    // Authentication with mysql_native_password
-
-    if (authdata_len < SHA_DIGEST_LENGTH) {
-      LOG(WARNING) << "Received authdata with length " << authdata_len
-                   << " while expecting " << SHA_DIGEST_LENGTH;
-      SendERR(1045, "28000", "Access denied");
-      return false;
-    }
-
-    // Convert slave_pwhash from hex
-    BIGNUM *bn_slave_pwhash = BN_new();
-    int bn_slave_pwhash_len = BN_hex2bn(&bn_slave_pwhash, slave_pwhash);
-    bn_slave_pwhash_len = (bn_slave_pwhash_len + 1) / 2;
-    unsigned char *bn_slave_pwhash_buf = (unsigned char*) malloc(bn_slave_pwhash_len);
-    BN_bn2bin(bn_slave_pwhash, bn_slave_pwhash_buf);
-
-    // SHA1(scramble + slave_pwhash)
-    unsigned char stage1[SHA_DIGEST_LENGTH];
-    SHA_CTX stage1_ctx;
-    SHA1_Init(&stage1_ctx);
-    SHA1_Update(&stage1_ctx, scramble, SCRAMBLE_LENGTH);
-    SHA1_Update(&stage1_ctx, bn_slave_pwhash_buf, bn_slave_pwhash_len);
-    SHA1_Final(stage1, &stage1_ctx);
-    BN_free(bn_slave_pwhash);
-
-    unsigned char stage2[SHA_DIGEST_LENGTH];
-    for (int i = 0; i < SHA_DIGEST_LENGTH; i++) {
-      stage2[i] = (unsigned char) authdata[i] ^ stage1[i];
-    }
-
-    unsigned char session_pwhash[SHA_DIGEST_LENGTH];
-    SHA1(stage2, SHA_DIGEST_LENGTH, session_pwhash);
-
-    if (strncmp((const char*) session_pwhash,
-                (const char*) bn_slave_pwhash_buf,
-                SHA_DIGEST_LENGTH)) {
-      free(bn_slave_pwhash_buf);
-      SendERR(1045, "28000", "Access denied");
-      return false;
-    }
-    free(bn_slave_pwhash_buf);
+  if (strlen(slave_pwhash) == 0) {
+    LOG(WARNING) << "No ripple_server_password_hash set, "
+                    "using noop authentication";
   } else {
-    LOG(WARNING) << "No ripple_server_password_hash set, using noop authentication";
+    if (strncmp(clientplugin, plugin, sizeof(plugin)) != 0) {
+      if (!SendAuthSwitchRequest(plugin, scramble, SCRAMBLE_LENGTH)) {
+        return false;
+      }
+      p = connection_->ReadPacket();
+      if (p.length == -1) {
+        LOG(WARNING) << "Failed to read response to auth switch packet";
+        return false;
+      }
+      // Response format:
+      // https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_connection_phase_packets_protocol_auth_switch_response.html
+      if (p.length == 0) {
+        // Client requested to login without password. We have
+        // ripple_server_password_hash flag, so we require a password.
+        SendERR(1045, "28000", "Access denied");
+        return false;
+      }
+      authdata = reinterpret_cast<const char*>(p.ptr);
+      authdata_len = p.length;
+    }
+    if (!ValidateNativeHash(authdata, authdata_len, slave_pwhash, scramble)) {
+      SendERR(1045, "28000", "Access denied");
+      return false;
+    }
   }
 
-  if (SendOK()) {
-    connection_->Reset();
-    connection_->SetCompressed(compress);
-    return true;
+  if (!SendOK())
+    return false;
+
+  connection_->Reset();
+  connection_->SetCompressed(compress);
+  return true;
+}
+
+// Authentication with mysql_native_password
+bool Protocol::ValidateNativeHash(const char *authdata, int authdata_len,
+                                  const char *slave_pwhash,
+                                  unsigned char *scramble) {
+  if (authdata_len < SHA_DIGEST_LENGTH) {
+    LOG(WARNING) << "Received authdata with length " << authdata_len
+                 << " while expecting " << SHA_DIGEST_LENGTH;
+    SendERR(1045, "28000", "Access denied");
+    return false;
   }
 
-  return false;
+  // Convert slave_pwhash from hex
+  BIGNUM *bn_slave_pwhash = BN_new();
+  int bn_slave_pwhash_len = BN_hex2bn(&bn_slave_pwhash, slave_pwhash);
+  bn_slave_pwhash_len = (bn_slave_pwhash_len + 1) / 2;
+  unsigned char *bn_slave_pwhash_buf =
+      (unsigned char*) malloc(bn_slave_pwhash_len);
+  BN_bn2bin(bn_slave_pwhash, bn_slave_pwhash_buf);
+
+  // SHA1(scramble + slave_pwhash)
+  unsigned char stage1[SHA_DIGEST_LENGTH];
+  SHA_CTX stage1_ctx;
+  SHA1_Init(&stage1_ctx);
+  SHA1_Update(&stage1_ctx, scramble, SCRAMBLE_LENGTH);
+  SHA1_Update(&stage1_ctx, bn_slave_pwhash_buf, bn_slave_pwhash_len);
+  SHA1_Final(stage1, &stage1_ctx);
+  BN_free(bn_slave_pwhash);
+
+  unsigned char stage2[SHA_DIGEST_LENGTH];
+  for (int i = 0; i < SHA_DIGEST_LENGTH; i++) {
+    stage2[i] = (unsigned char) authdata[i] ^ stage1[i];
+  }
+
+  unsigned char session_pwhash[SHA_DIGEST_LENGTH];
+  SHA1(stage2, SHA_DIGEST_LENGTH, session_pwhash);
+
+  if (strncmp((const char*) session_pwhash,
+              (const char*) bn_slave_pwhash_buf,
+              SHA_DIGEST_LENGTH)) {
+    free(bn_slave_pwhash_buf);
+    return false;
+  }
+  free(bn_slave_pwhash_buf);
+
+  return true;
+}
+
+// docs: https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_connection_phase_packets_protocol_auth_switch_request.html
+bool Protocol::SendAuthSwitchRequest(const char *plugin, unsigned char *data,
+                                     size_t data_len) {
+  size_t packet_len = 1 + strlen(plugin) + 1 + data_len + 1;
+  uint8_t *packet = (uint8_t*) malloc(packet_len);
+  uint8_t *ptr = packet;
+
+  LOG(INFO) << "Sending AuthSwitchRequest for " << plugin;
+
+  *ptr = constants::EOF_PACKET;
+  ptr += 1;
+
+  memcpy(ptr, plugin, strlen(plugin) + 1);
+  ptr += strlen(plugin) + 1;
+
+  memcpy(ptr, data, data_len);
+  ptr += data_len;
+
+  // Terminate data with a NUL. This is not in the docs, but seems to be
+  // required.
+  *ptr = 0;
+  ptr += 1;
+
+  Connection::Packet p = { static_cast<int>(ptr - packet), packet };
+  assert(p.length <= packet_len);
+  bool res = connection_->WritePacket(p);
+  if (!res) {
+    LOG(WARNING) << "Failed to write AuthSwitchRequest packet";
+  }
+
+  free(packet);
+  return res;
 }
 
 bool Protocol::SendOK() {
