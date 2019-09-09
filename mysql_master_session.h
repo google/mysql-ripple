@@ -71,8 +71,8 @@ class MasterSession : public ThreadedSession {
   // Lock/unlock master session.
   // This prevents master from starting if stopped,
   // and make checking of state, and setting below race-free.
-  void Lock() const EXCLUSIVE_LOCK_FUNCTION(mutex_) { mutex_.Lock(); }
-  void Unlock() const UNLOCK_FUNCTION(mutex_) { mutex_.Unlock(); }
+  void Lock() const ABSL_EXCLUSIVE_LOCK_FUNCTION(mutex_) { mutex_.Lock(); }
+  void Unlock() const ABSL_UNLOCK_FUNCTION(mutex_) { mutex_.Unlock(); }
 
   // Set properties for master connection.
   // Changes take effect next time we connect.

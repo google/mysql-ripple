@@ -98,7 +98,7 @@ class Rippled : mysql::SlaveSession::RippledInterface,
 
 
   absl::Mutex shutdown_mutex_;
-  bool shutdown_requested_ GUARDED_BY(shutdown_mutex_) = false;
+  bool shutdown_requested_ ABSL_GUARDED_BY(shutdown_mutex_) = false;
   Uuid uuid_;
 };
 

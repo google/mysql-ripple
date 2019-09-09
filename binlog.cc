@@ -496,7 +496,7 @@ bool Binlog::WaitBinlogEndPosition(FilePosition *pos,
                                    int64_t *truncate_counter,
                                    absl::Duration timeout) {
   absl::ReaderMutexLock position_lock(&position_mutex_);
-  auto check = [this, pos]() SHARED_LOCKS_REQUIRED(position_mutex_) {
+  auto check = [this, pos]() ABSL_SHARED_LOCKS_REQUIRED(position_mutex_) {
     return stop_ || !position_.latest_completed_gtid_position.equal(*pos);
   };
   position_mutex_.AwaitWithTimeout(absl::Condition(&check), timeout);

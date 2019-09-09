@@ -47,49 +47,49 @@ class Binlog : public BinlogReader::BinlogInterface {
  public:
   explicit Binlog(const char *directory, int64_t max_binlog_size,
                   const file::Factory &ff);
-  virtual ~Binlog() LOCKS_EXCLUDED(file_mutex_, position_mutex_);
+  virtual ~Binlog() ABSL_LOCKS_EXCLUDED(file_mutex_, position_mutex_);
 
   // Create a binlog file and open if non-exists.
   // If a binlog already exists return false.
   // Not thread safe.
-  virtual bool Create() LOCKS_EXCLUDED(file_mutex_, position_mutex_);
+  virtual bool Create() ABSL_LOCKS_EXCLUDED(file_mutex_, position_mutex_);
 
   // Create binlog with start position and open if non-exists.
   // This is used for -ripple_requested_start_gtid_position.
   // If a binlog already exists return false.
   // Not thread safe.
   virtual bool Create(const GTIDList &)
-      LOCKS_EXCLUDED(file_mutex_, position_mutex_);
+      ABSL_LOCKS_EXCLUDED(file_mutex_, position_mutex_);
 
   // Open binlog and recover/discard unfinished entries.
   // return 0 - no state found on disk
   //        1 - state recovered
   //       -1 - an error/inconsistency
   // Not thread safe.
-  virtual int Recover() LOCKS_EXCLUDED(file_mutex_, position_mutex_);
+  virtual int Recover() ABSL_LOCKS_EXCLUDED(file_mutex_, position_mutex_);
 
   // Close the binlog, if open.
   // Always returns true.
   // Thread safe.
-  virtual bool Close() LOCKS_EXCLUDED(file_mutex_, position_mutex_);
+  virtual bool Close() ABSL_LOCKS_EXCLUDED(file_mutex_, position_mutex_);
 
   // Check if binlog is open.
   // Thread safe.
-  virtual bool IsOpen() const LOCKS_EXCLUDED(file_mutex_);
+  virtual bool IsOpen() const ABSL_LOCKS_EXCLUDED(file_mutex_);
 
   // Get binlog position.
   // Thread safe.
-  virtual BinlogPosition GetBinlogPosition() LOCKS_EXCLUDED(position_mutex_);
+  virtual BinlogPosition GetBinlogPosition()
+      ABSL_LOCKS_EXCLUDED(position_mutex_);
 
   // Wait for a file position other than pos (for BinlogReader)
   // and store current end position in *pos.
   //
   // truncate_counter - OUT return no of times binlog has been truncated.
   // Thread safe.
-  bool WaitBinlogEndPosition(FilePosition *pos,
-                             int64_t *truncate_counter,
+  bool WaitBinlogEndPosition(FilePosition *pos, int64_t *truncate_counter,
                              absl::Duration timeout) override
-      LOCKS_EXCLUDED(file_mutex_, position_mutex_);
+      ABSL_LOCKS_EXCLUDED(file_mutex_, position_mutex_);
 
   // Connection established.
   // Thread safe.
@@ -98,17 +98,17 @@ class Binlog : public BinlogReader::BinlogInterface {
   // Add an event to binlog.
   // If wait is true, this method blocks until event has been written to disk.
   virtual bool AddEvent(RawLogEventData event, bool wait)
-      LOCKS_EXCLUDED(file_mutex_, position_mutex_);
+      ABSL_LOCKS_EXCLUDED(file_mutex_, position_mutex_);
 
   // Switch local binlog file.
   // Store name of new file in newfile.
   virtual bool SwitchFile(std::string *newfile)
-      LOCKS_EXCLUDED(file_mutex_, position_mutex_);
+      ABSL_LOCKS_EXCLUDED(file_mutex_, position_mutex_);
 
   // Connection closed.
   // Thread safe.
   virtual void ConnectionClosed(const mysql::ClientConnection *)
-      LOCKS_EXCLUDED(file_mutex_, position_mutex_);
+      ABSL_LOCKS_EXCLUDED(file_mutex_, position_mutex_);
 
   // Register/unregister a binlog reader.
   // This is used when purging logs so that we don't purge too far.
@@ -133,30 +133,30 @@ class Binlog : public BinlogReader::BinlogInterface {
   std::string GetPath(absl::string_view filename) const override;
 
   // Remove a binlog file.
-  bool Remove(absl::string_view filename) LOCKS_EXCLUDED(file_mutex_);
+  bool Remove(absl::string_view filename) ABSL_LOCKS_EXCLUDED(file_mutex_);
 
   // Get size of binlog file.
   bool GetBinlogSize(absl::string_view filename, off_t *size) const override
-      LOCKS_EXCLUDED(file_mutex_);
+      ABSL_LOCKS_EXCLUDED(file_mutex_);
 
   // "Stop" binlog.
   // Wake up all binlog readers waiting for more data.
-  virtual void Stop() LOCKS_EXCLUDED(position_mutex_);
+  virtual void Stop() ABSL_LOCKS_EXCLUDED(position_mutex_);
 
   // Purge logs.
   // On success, store name of oldest kept file in oldest_file.
   virtual bool PurgeLogs(std::string *oldest_file)
-      LOCKS_EXCLUDED(position_mutex_);
+      ABSL_LOCKS_EXCLUDED(position_mutex_);
 
   // Purge logs with st_mtime < before_time.
   // On success, store name of oldest kept file in oldest_file.
   virtual bool PurgeLogsBefore(absl::Time before_time, std::string *oldest_file)
-      LOCKS_EXCLUDED(position_mutex_);
+      ABSL_LOCKS_EXCLUDED(position_mutex_);
 
   // Purge logs, keeping at least keep_size bytes.
   // On success, store name of oldest kept file in oldest_file.
   virtual bool PurgeLogsKeepSize(size_t keep_size, std::string *oldest_file)
-      LOCKS_EXCLUDED(position_mutex_);
+      ABSL_LOCKS_EXCLUDED(position_mutex_);
 
   // Purge logs up until not including to_file.
   // On success, store the name of oldest kept file in oldest_file.
@@ -164,7 +164,7 @@ class Binlog : public BinlogReader::BinlogInterface {
   // might be using an older file.
   virtual bool PurgeLogsUntil(absl::string_view to_file,
                               std::string *oldest_file)
-      LOCKS_EXCLUDED(position_mutex_);
+      ABSL_LOCKS_EXCLUDED(position_mutex_);
 
  private:
   //
@@ -174,7 +174,7 @@ class Binlog : public BinlogReader::BinlogInterface {
   absl::Mutex position_mutex_;
 
   // This mutex prevents concurrent access to binlog_file_
-  mutable absl::Mutex file_mutex_ ACQUIRED_AFTER(position_mutex_);
+  mutable absl::Mutex file_mutex_ ABSL_ACQUIRED_AFTER(position_mutex_);
 
   // directory for binlog index+files
   const std::string directory_;
@@ -186,14 +186,14 @@ class Binlog : public BinlogReader::BinlogInterface {
   const file::Factory &ff_;
 
   // The current binlog file.
-  file::AppendOnlyFile *binlog_file_ GUARDED_BY(file_mutex_)
-      PT_GUARDED_BY(file_mutex_);
+  file::AppendOnlyFile *binlog_file_ ABSL_GUARDED_BY(file_mutex_)
+      ABSL_PT_GUARDED_BY(file_mutex_);
 
   // The binlog index.
   BinlogIndex index_;
 
   // The binlog position.
-  BinlogPosition position_ GUARDED_BY(position_mutex_);
+  BinlogPosition position_ ABSL_GUARDED_BY(position_mutex_);
 
   // The file position of the last GTID that has been fully flushed to storage.
   FilePosition flushed_gtid_position_;
@@ -226,18 +226,17 @@ class Binlog : public BinlogReader::BinlogInterface {
   // On entry the binlog must not be open
   // On success, it will be open
   // On failure, it will not be open
-  bool CreateNewFile(const GTIDList& start_pos,
-                     const FilePosition& master_pos)
-      LOCKS_EXCLUDED(file_mutex_, position_mutex_);
+  bool CreateNewFile(const GTIDList &start_pos, const FilePosition &master_pos)
+      ABSL_LOCKS_EXCLUDED(file_mutex_, position_mutex_);
 
   // Create a new binlog file (and add it to binlog index).
   // Shall be called with file_mutex_ & position_mutex_ locked.
   // On entry the binlog must not be open
   // On success, it will be open
   // On failure, it will not be open
-  bool CreateNewFileLocked(const GTIDList& start_pos,
-                           const FilePosition& master_pos)
-      EXCLUSIVE_LOCKS_REQUIRED(file_mutex_, position_mutex_);
+  bool CreateNewFileLocked(const GTIDList &start_pos,
+                           const FilePosition &master_pos)
+      ABSL_EXCLUSIVE_LOCKS_REQUIRED(file_mutex_, position_mutex_);
 
   // Write start encryption event (if encryption is enabled).
   bool WriteCryptInfo(file::AppendOnlyFile *file);
@@ -250,7 +249,7 @@ class Binlog : public BinlogReader::BinlogInterface {
   // Write format descriptor for mysqld (and optionally StartEncryption)
   // to start of binlog file.
   bool WriteMasterFormatDescriptor()
-      EXCLUSIVE_LOCKS_REQUIRED(file_mutex_, position_mutex_);
+      ABSL_EXCLUSIVE_LOCKS_REQUIRED(file_mutex_, position_mutex_);
 
   // SwitchFile, shall be called with file_mutex_ & position_mutex_ locked.
   // On entry the binlog must be open
@@ -258,34 +257,34 @@ class Binlog : public BinlogReader::BinlogInterface {
   // Returns true iff finalizing the old file and marking it for archival were
   // successful.
   bool SwitchFileLocked()
-      EXCLUSIVE_LOCKS_REQUIRED(file_mutex_, position_mutex_);
+      ABSL_EXCLUSIVE_LOCKS_REQUIRED(file_mutex_, position_mutex_);
 
   // Check if this event shall be written to disk.
   bool SkipWritingEvent(RawLogEventData event) const;
 
   // Write an event to binlog file.
   bool WriteEvent(RawLogEventData event, off_t *offset, bool wait)
-      EXCLUSIVE_LOCKS_REQUIRED(file_mutex_);
+      ABSL_EXCLUSIVE_LOCKS_REQUIRED(file_mutex_);
 
   // Rollback any started but not completed transactions (GTIDs)
   // by truncating the binlog file. Updates pos to reflect actions taken.
   // The truncated variable is set to TRUE if the binlog file was truncated.
   bool Rollback(BinlogPosition *pos, bool *truncated)
-      LOCKS_EXCLUDED(file_mutex_);
+      ABSL_LOCKS_EXCLUDED(file_mutex_);
 
   // Finalize a binlog file, indicating it will not be written to anymore.
   bool Finalize(absl::string_view filename)
-      EXCLUSIVE_LOCKS_REQUIRED(file_mutex_);
+      ABSL_EXCLUSIVE_LOCKS_REQUIRED(file_mutex_);
 
   // Mark a binlog file for archiving, which will move it to cheaper storage.
   bool Archive(absl::string_view filename)
-      EXCLUSIVE_LOCKS_REQUIRED(file_mutex_);
+      ABSL_EXCLUSIVE_LOCKS_REQUIRED(file_mutex_);
 
   // Close an opened binlog.
   // On entry the file must be open and file_mutex_ must be held.
   // On return, it will be closed and file_mutex_ remains held.
-  void CloseFileLocked() EXCLUSIVE_LOCKS_REQUIRED(file_mutex_)
-      SHARED_LOCKS_REQUIRED(position_mutex_);
+  void CloseFileLocked() ABSL_EXCLUSIVE_LOCKS_REQUIRED(file_mutex_)
+      ABSL_SHARED_LOCKS_REQUIRED(position_mutex_);
 
   Binlog(Binlog&&) = delete;
   Binlog(const Binlog&) = delete;
