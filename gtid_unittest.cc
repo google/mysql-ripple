@@ -41,7 +41,7 @@ TEST(GTID, Successor) {
   EXPECT_FALSE(g2.equal(g1));
 }
 
-TEST(GTIDStartPosition, ) {
+TEST(GTIDStartPosition, Contained) {
   GTIDStartPosition pos1;
   EXPECT_TRUE(pos1.IsEmpty());
   GTID g;
