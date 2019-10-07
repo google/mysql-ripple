@@ -220,25 +220,56 @@ TEST(GTIDSet, Basic) {
   EXPECT_FALSE(set.Parse(str));
 }
 
-TEST(GTIDList, Parse) {
+TEST(GTIDList, Parse_MariaDB) {
   GTIDList list;
-  std::string str =
-      "6c27ed6d-7ee1-11e3-be39-6c626d957cfa:1-1-5"  // 5 == [1-5]
-      ",2-1-3"                                      // 3 == [1-3]
-      ",6c27ed6d-7ee1-11e3-be39-6c626d957cfc:3-1-[23-29]"
-      ",4-1-[23-29][31-34]";
+  std::string str;
 
+  str = "6c27ed6d-7ee1-11e3-be39-6c626d957cfa:3-1-23";
   EXPECT_TRUE(list.Parse(str));
   EXPECT_TRUE(list.Parse("'" + str + "'"));
   EXPECT_EQ(list.ToString(), str);
   EXPECT_EQ(list.GetStreamKey(), GTIDList::KEY_DOMAIN_ID);
+  EXPECT_EQ(list.GetListMode(), GTIDList::MODE_STRICT_MONOTONIC);
+
+  // MariaDB can't have gaps.
+  str = "6c27ed6d-7ee1-11e3-be39-6c626d957cfa:3-1-[1-10][15-20]";
+  EXPECT_FALSE(list.Parse(str));
+}
+
+TEST(GTIDList, Parse_MySQL) {
+  GTIDList list;
+  std::string str;
+
+  str = "6c27ed6d-7ee1-11e3-be39-6c626d957cfa:0-0-[23-29][31-34]"
+        ",6c27ed6d-7ee1-11e3-be39-6c626d957cfc:0-0-23";
+  EXPECT_TRUE(list.Parse(str));
+  EXPECT_TRUE(list.Parse("'" + str + "'"));
+  EXPECT_EQ(list.GetStreamKey(), GTIDList::KEY_UUID);
+  EXPECT_EQ(list.GetListMode(), GTIDList::MODE_GAPS);
+
+  // List mode for MySQL is always MODE_GAPS, because gaps can appear at any
+  // time, even if there are no gaps initially.
+  str = "6c27ed6d-7ee1-11e3-be39-6c626d957cfa:0-0-30"
+        ",6c27ed6d-7ee1-11e3-be39-6c626d957cfc:0-0-23";
+  EXPECT_TRUE(list.Parse(str));
+  EXPECT_TRUE(list.Parse("'" + str + "'"));
+  EXPECT_EQ(list.GetStreamKey(), GTIDList::KEY_UUID);
+  EXPECT_EQ(list.GetListMode(), GTIDList::MODE_GAPS);
+
+  str = "6c27ed6d-7ee1-11e3-be39-6c626d957cfa:0-0-5"  // 5 == [1-5]
+        ",6c27ed6d-7ee1-11e3-be39-6c626d957cfc:0-0-[23-29][31-34]";
+  EXPECT_TRUE(list.Parse(str));
+  EXPECT_TRUE(list.Parse("'" + str + "'"));
+  EXPECT_EQ(list.ToString(), str);
+  EXPECT_EQ(list.GetStreamKey(), GTIDList::KEY_UUID);
   EXPECT_EQ(list.GetListMode(), GTIDList::MODE_GAPS);
   EXPECT_TRUE(list.Equal(list));
 
   GTIDList copy(list);
   GTID gtid;
-  gtid.domain_id = 4;
-  gtid.server_id.server_id = 1;
+  gtid.domain_id = 0;
+  gtid.server_id.uuid.Parse("6c27ed6d-7ee1-11e3-be39-6c626d957cfc");
+  gtid.server_id.server_id = 0;
   gtid.seq_no = 30;
   EXPECT_TRUE(copy.Update(gtid));
   EXPECT_FALSE(list.Equal(copy));
@@ -248,13 +279,9 @@ TEST(GTIDList, Parse) {
   EXPECT_TRUE(GTIDList::Subset(list, copy));
   EXPECT_FALSE(GTIDList::Subset(copy, list));
   EXPECT_EQ(copy.ToString(),
-            "6c27ed6d-7ee1-11e3-be39-6c626d957cfa:1-1-5"  // 5 == [1-5]
-            ",2-1-3"                                      // 3 == [1-3]
-            ",6c27ed6d-7ee1-11e3-be39-6c626d957cfc:3-1-[23-29]"
-            ",4-1-[23-34]");
+            "6c27ed6d-7ee1-11e3-be39-6c626d957cfa:0-0-5"  // 5 == [1-5]
+            ",6c27ed6d-7ee1-11e3-be39-6c626d957cfc:0-0-[23-34]");
 
-  gtid.domain_id = 4;
-  gtid.server_id.server_id = 1;
   gtid.seq_no = 22;
   EXPECT_TRUE(copy.Update(gtid));
   gtid.seq_no = 35;
@@ -279,10 +306,13 @@ TEST(GTIDList, Parse) {
   EXPECT_TRUE(GTIDList::Subset(list, copy));
   EXPECT_FALSE(GTIDList::Subset(copy, list));
   EXPECT_EQ(copy.ToString(),
-            "6c27ed6d-7ee1-11e3-be39-6c626d957cfa:1-1-5"  // 5 == [1-5]
-            ",2-1-3"                                      // 3 == [1-3]
-            ",6c27ed6d-7ee1-11e3-be39-6c626d957cfc:3-1-[23-29]"
-            ",4-1-[19-35][50-50]");
+            "6c27ed6d-7ee1-11e3-be39-6c626d957cfa:0-0-5"  // 5 == [1-5]
+            ",6c27ed6d-7ee1-11e3-be39-6c626d957cfc:0-0-[19-35][50-50]");
+}
+
+TEST(GTIDList, Parse_BadSyntax) {
+  GTIDList list;
+  std::string str;
 
   str = "'6c27ed6d-7ee1-11e3-be39-6c626d957cfc:1-1-5";
   EXPECT_FALSE(list.Parse(str));
@@ -334,6 +364,11 @@ TEST(GTIDList, Parse) {
 
   str = "6c27ed6d-7ee1-11e3-be39-6c626d957cfc:23-23";
   EXPECT_FALSE(list.Parse(str));
+}
+
+TEST(GTIDList, Parse_Empty) {
+  GTIDList list;
+  std::string str;
 
   str = "''";
   EXPECT_TRUE(list.Parse(str));

@@ -731,12 +731,14 @@ bool GTIDList::Parse(absl::string_view s) {
     }
     if (stream.domain_id != 0 || stream.server_id.server_id != 0) {
       key_guess = KEY_DOMAIN_ID;
+      mode_guess = MODE_STRICT_MONOTONIC;
+      if (stream.intervals.size() != 1) {
+        LOG(WARNING) << "GTIDList for MariaDB is incorrect, "
+                     << "contains several invervals: " << s;
+        return false;
+      }
     } else if (!stream.server_id.uuid.empty()) {
       key_guess = KEY_UUID;
-    }
-    if (stream.intervals.size() == 1) {
-      mode_guess = MODE_STRICT_MONOTONIC;
-    } else {
       mode_guess = MODE_GAPS;
     }
 
