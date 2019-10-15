@@ -21,8 +21,8 @@ load(
     "@rules_cc//cc:defs.bzl",
     "cc_binary",
     "cc_library",
-    "cc_test",
     "cc_proto_library",
+    "cc_test",
 )
 load("@rules_proto//proto:defs.bzl", "proto_library")
 
@@ -556,7 +556,7 @@ genrule(
         ",".join(["plugin_%s" % i for i in plugin_list]) +
         ",!'" +
         " -e 's!@pluginptrs@!" +
-        ",".join(["\&plugin_%s" % i for i in plugin_list]) +
+        ",".join(["\\&plugin_%s" % i for i in plugin_list]) +
         ",!'" +
         " $< > $@"
     ),
