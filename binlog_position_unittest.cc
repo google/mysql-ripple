@@ -141,7 +141,7 @@ TEST(BinlogPosition, DefaultPosition) {
   BinlogPosition pos;
   EXPECT_EQ(pos.group_state, BinlogPosition::NO_GROUP);
   // For code coverage...
-  printf("pos.ToString.c_str(): %s\n", pos.ToString().c_str());
+  printf("pos.ToString().c_str(): %s\n", pos.ToString().c_str());
 }
 
 TEST(BinlogPosition, Update_group_state) {
